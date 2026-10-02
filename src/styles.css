@@ -15,7 +15,7 @@ h1:focus { outline: none; }
 h2 { font-family: Georgia, serif; font-size: 28px; }
 p { line-height: 1.65; }
 .lede { color: #5b665e; font-size: 18px; }
-.cup { font-size: 80px; text-align: center; padding: 16px; background: #efeadc; border-radius: 22px; margin-top: 28px; }
+.coffee-art { display: block; width: 100%; height: auto; border-radius: 22px; margin-top: 28px; }
 .actions { display: flex; gap: 12px; flex-wrap: wrap; margin-top: 28px; }
 .button { border: 1px solid #263e36; border-radius: 12px; background: #263e36; color: white; padding: 14px 20px; font: inherit; font-weight: 650; text-decoration: none; cursor: pointer; text-align: center; }
 .secondary { background: transparent; color: #263e36; }
@@ -31,3 +31,9 @@ input, select { width: 100%; min-height: 48px; border: 1px solid #b6b9ac; border
 .remove { background: transparent; color: #263e36; border: 1px solid #b6b9ac; padding: 8px; border-radius: 8px; cursor: pointer; }
 footer { text-align: center; padding: 0 24px 28px; font-size: 12px; color: #5b665e; }
 @media (max-width: 600px) { header { align-items: flex-start; flex-direction: column; } main { margin: 8px 16px 40px; padding: 28px 24px; } .actions { flex-direction: column; } }
+
+.edit-actions { display: flex; gap: 8px; flex-wrap: wrap; flex-shrink: 0; }
+.ingredients li > div:first-child { min-width: 0; overflow-wrap: anywhere; }
+.ingredients li.editing { display: block; }
+.editing form { margin-top: 0; }
+@media (max-width: 420px) { .ingredients li { align-items: flex-start; flex-direction: column; } }

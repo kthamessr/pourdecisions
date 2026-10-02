@@ -1,0 +1,29 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="960" height="560" viewBox="0 0 960 560" role="img" aria-labelledby="title desc">
+<title id="title">A freshly poured cup of coffee</title><desc id="desc">Creamy coffee with a heart of milk foam in a ceramic cup, surrounded by coffee beans on a warm green table.</desc>
+<defs>
+ <radialGradient id="table"><stop stop-color="#587565"/><stop offset="1" stop-color="#263e36"/></radialGradient>
+ <radialGradient id="coffee"><stop stop-color="#cf9a58"/><stop offset=".8" stop-color="#98602d"/><stop offset="1" stop-color="#593822"/></radialGradient>
+ <linearGradient id="ceramic" x2=".8" y2="1"><stop stop-color="#fffdf4"/><stop offset="1" stop-color="#d5cbb5"/></linearGradient>
+ <filter id="shadow" x="-50%" y="-50%" width="200%" height="200%"><feDropShadow dx="8" dy="18" stdDeviation="18" flood-color="#101f18" flood-opacity=".45"/></filter>
+</defs>
+<rect width="960" height="560" rx="32" fill="url(#table)"/>
+<path d="M0 475C290 400 600 575 960 435V560H0" fill="#e8dac0" opacity=".12"/>
+<g filter="url(#shadow)">
+ <ellipse cx="480" cy="307" rx="220" ry="194" fill="url(#ceramic)"/>
+ <ellipse cx="480" cy="307" rx="187" ry="164" fill="none" stroke="#c7bda7" stroke-width="2"/>
+ <path d="M635 215C747 178 784 337 666 357" fill="none" stroke="#f5efdf" stroke-width="36"/>
+ <circle cx="466" cy="274" r="165" fill="url(#ceramic)"/>
+ <circle cx="466" cy="274" r="144" fill="url(#coffee)"/>
+ <circle cx="466" cy="274" r="136" fill="none" stroke="#e5bd7f" stroke-width="6" opacity=".7"/>
+ <path d="M466 340C440 310 381 291 389 254C396 221 443 222 466 257C489 222 536 221 543 254C551 291 492 310 466 340Z" fill="#fff1d5"/>
+ <path d="M414 299Q466 322 518 299M424 311Q466 330 508 311" fill="none" stroke="#bb8140" stroke-width="4"/>
+ <path d="M462 350Q481 310 470 251" fill="none" stroke="#fff1d5" stroke-width="8" stroke-linecap="round"/>
+</g>
+<g fill="#352419" stroke="#65432b" stroke-width="3">
+ <ellipse cx="185" cy="393" rx="23" ry="15" transform="rotate(-30 185 393)"/><path d="M166 403Q185 384 204 384" fill="none"/>
+ <ellipse cx="212" cy="443" rx="23" ry="15" transform="rotate(25 212 443)"/><path d="M192 434Q212 450 231 451" fill="none"/>
+ <ellipse cx="777" cy="151" rx="23" ry="15" transform="rotate(-45 777 151)"/><path d="M762 165Q777 145 792 136" fill="none"/>
+ <ellipse cx="812" cy="196" rx="23" ry="15" transform="rotate(15 812 196)"/><path d="M790 191Q812 202 834 200" fill="none"/>
+</g>
+<g fill="none" stroke="#fff5df" stroke-width="6" stroke-linecap="round" opacity=".24"><path d="M392 117C371 84 409 67 390 39"/><path d="M476 102C453 70 492 54 474 25"/><path d="M551 117C531 88 562 69 549 43"/></g>
+</svg>

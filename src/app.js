@@ -1,12 +1,14 @@
 const app = document.querySelector('#app');
 const categories = ['Coffee', 'Espresso / pods', 'Syrups', 'Creamers / milk', 'Toppings'];
 // In-memory state keeps this first foundation free of accounts and storage dependencies.
-const state = { ingredients: [] };
+const state = { ingredients: [], editing: null };
 const link = (label, route, secondary = false) => `<a class="button ${secondary ? 'secondary' : ''}" href="#${route}">${label}</a>`;
 const intro = (eyebrow, title, text) => `<p class="eyebrow">${eyebrow}</p><h1 tabindex="-1">${title}</h1><p class="lede">${text}</p>`;
 const items = () => {
   if (!state.ingredients.length) return '<p class="empty">Your ingredient list is empty. Add what you have to get started.</p>';
-  return '<ul class="ingredients">' + state.ingredients.map((item, index) => `<li><div><strong>${escapeHtml(item.name)}</strong><span>${escapeHtml(item.category)}</span></div><button class="remove" data-remove="${index}" aria-label="Remove ${escapeHtml(item.name)}">Remove</button></li>`).join('') + '</ul>';
+  return '<ul class="ingredients">' + state.ingredients.map((item, index) => state.editing === index
+    ? `<li class="editing"><form id="edit-form"><label for="edit-ingredient">Ingredient</label><input id="edit-ingredient" name="ingredient" maxlength="80" value="${escapeHtml(item.name)}" required><label for="edit-category">Category</label><select id="edit-category" name="category">${categories.map(category => `<option${category === item.category ? ' selected' : ''}>${category}</option>`).join('')}</select><div class="edit-actions"><button class="button" type="submit">Save changes</button><button class="button secondary" type="button" data-cancel>Cancel</button></div><p id="edit-feedback" role="status"></p></form></li>`
+    : `<li><div><strong>${escapeHtml(item.name)}</strong><span>${escapeHtml(item.category)}</span></div><div class="edit-actions"><button class="remove" data-edit="${index}" aria-label="Edit ${escapeHtml(item.name)}">Edit</button><button class="remove" data-remove="${index}" aria-label="Remove ${escapeHtml(item.name)}">Remove</button></div></li>`).join('') + '</ul>';
 };
 function escapeHtml(text) {
   return text.replace(/[&<>"']/g, character => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[character]));
@@ -18,7 +20,7 @@ function entry(missing) {
   <p id="feedback" role="status"></p>${items()}<div class="actions">${link('Look Right?', 'inventory')}${link('Back home', 'home', true)}</div>`;
 }
 const screens = {
-  home: () => intro('A little curiosity. A better cup.', 'Pour Decisions', 'It’s what’s inside that counts.') + `<div class="cup" aria-hidden="true">☕</div><h2>What’s the scoop?</h2><p>Start with what you have. See where it takes you.</p><div class="actions">${link('What’s the scoop?', 'scoop')}${link('I Got it', 'manual', true)}</div>`,
+  home: () => intro('A little curiosity. A better cup.', 'Pour Decisions', 'It’s what’s inside that counts.') + `<img class="coffee-art" src="assets/coffee.svg" alt="Creamy coffee with heart-shaped milk foam in a ceramic cup" width="960" height="560"><h2>What’s the scoop?</h2><p>Start with what you have. See where it takes you.</p><div class="actions">${link('What’s the scoop?', 'scoop')}${link('I Got it', 'manual', true)}</div>`,
   scoop: () => intro('Take a look inside', 'What’s the scoop?', 'Gather your coffee, syrups, creamers, and toppings.') + `<div class="note"><strong>Photo scanning is coming next.</strong><p>For now, enter your ingredients yourself. No photo is uploaded or analyzed.</p></div><div class="actions">${link('I Got it', 'manual')}${link('Look Right?', 'inventory', true)}</div>`,
   manual: () => entry(false),
   missing: () => entry(true),
@@ -36,6 +38,18 @@ function render() {
   });
 }
 app.addEventListener('submit', event => {
+  if (event.target.id === 'edit-form') {
+    event.preventDefault();
+    const data = new FormData(event.target);
+    const name = data.get('ingredient').trim();
+    if (!name) { document.querySelector('#edit-feedback').textContent = 'Enter an ingredient name.'; return; }
+    const index = state.editing;
+    state.ingredients[index] = { name, category: data.get('category') };
+    state.editing = null;
+    render();
+    app.querySelector(`[data-edit="${index}"]`).focus();
+    return;
+  }
   if (event.target.id !== 'ingredient-form') return;
   event.preventDefault();
   const data = new FormData(event.target);
@@ -47,10 +61,25 @@ app.addEventListener('submit', event => {
   document.querySelector('#ingredient').focus();
 });
 app.addEventListener('click', event => {
+  const edit = event.target.closest('[data-edit]');
+  if (edit) {
+    state.editing = Number(edit.dataset.edit);
+    render();
+    document.querySelector('#edit-ingredient').focus();
+    return;
+  }
+  if (event.target.closest('[data-cancel]')) {
+    const index = state.editing;
+    state.editing = null;
+    render();
+    app.querySelector(`[data-edit="${index}"]`).focus();
+    return;
+  }
   const button = event.target.closest('[data-remove]');
   if (!button) return;
   state.ingredients.splice(Number(button.dataset.remove), 1);
+  state.editing = null;
   render();
 });
-window.addEventListener('hashchange', render);
+window.addEventListener('hashchange', () => { state.editing = null; render(); });
 render();
