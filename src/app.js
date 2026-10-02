@@ -1,7 +1,19 @@
+import { createRecipe } from './recipes.js';
 const app = document.querySelector('#app');
 const categories = ['Coffee', 'Espresso / pods', 'Syrups', 'Creamers / milk', 'Toppings'];
-// In-memory state keeps this first foundation free of accounts and storage dependencies.
-const state = { ingredients: [], editing: null };
+const storageKey = 'pourdecisions.ingredients.v1';
+function loadIngredients() {
+  try {
+    const saved = JSON.parse(localStorage.getItem(storageKey) || '[]');
+    return Array.isArray(saved) ? saved.filter(i => i && typeof i.name === 'string' && i.name.trim() && i.name.length <= 80 && categories.includes(i.category)) : [];
+  } catch { return []; }
+}
+const state = { ingredients: loadIngredients(), editing: null, mood: {temperature:'hot',sweetness:'light',strength:'regular'}, recipe:null, storageError:false };
+function saveIngredients() {
+  try { localStorage.setItem(storageKey, JSON.stringify(state.ingredients)); state.storageError=false; }
+  catch { state.storageError=true; }
+  state.recipe=null;
+}
 const link = (label, route, secondary = false) => `<a class="button ${secondary ? 'secondary' : ''}" href="#${route}">${label}</a>`;
 const intro = (eyebrow, title, text) => `<p class="eyebrow">${eyebrow}</p><h1 tabindex="-1">${title}</h1><p class="lede">${text}</p>`;
 const items = () => {
@@ -25,12 +37,27 @@ const screens = {
   manual: () => entry(false),
   missing: () => entry(true),
   inventory: () => intro('Your starting lineup', 'Look Right?', 'Check what’s in your cupboard before choosing your next cup.') + items() + `<div class="actions">${link('Something’s missing', 'missing', true)}${state.ingredients.length ? link('That’s It', 'mood') : ''}</div>`,
-  mood: () => intro('A taste of what’s next', 'What’s Your Mood?', 'Your ingredients are ready. Mood controls and drink suggestions are the next step.') + `<div class="note"><strong>Drink suggestions are coming next.</strong><p>This foundation stops at your ingredient list.</p></div>${items()}<div class="actions">${link('Edit ingredients', 'inventory')}${link('Back home', 'home', true)}</div>`
+  mood: () => moodScreen(),
+  recipe: () => recipeScreen()
 };
+function ingredientSelect(label, name, allowed, optional=true) {
+  return `<label for="${name}">${label}</label><select id="${name}" name="${name}">${optional?'<option value="">None</option>':''}${state.ingredients.filter(i=>allowed.includes(i.category)).map(i=>`<option value="${escapeHtml(i.name)}"${state.mood[name]===i.name?' selected':''}>${escapeHtml(i.name)} (${escapeHtml(i.category)})</option>`).join('')}</select>`;
+}
+function moodScreen() {
+  const heading=intro('Your cup, your way','What’s Your Mood?','Choose how you want your next cup to feel.');
+  if(!state.ingredients.some(i=>['Coffee','Espresso / pods'].includes(i.category))) return heading+'<p class="empty">Add coffee or espresso to make your first pour decision.</p>'+link('Something’s missing','missing');
+  const choice=(label,name,options)=>`<fieldset><legend>${label}</legend><div class="mood-options">${options.map(([value,text])=>`<label class="mood-choice"><input type="radio" name="${name}" value="${value}"${state.mood[name]===value?' checked':''}>${text}</label>`).join('')}</div></fieldset>`;
+  return heading+`<form id="mood-form">${choice('Temperature','temperature',[['hot','Hot'],['iced','Iced']])}${choice('Sweetness','sweetness',[['none','No added syrup'],['light','Lightly sweet'],['sweet','Sweet']])}${choice('Coffee strength','strength',[['regular','Regular'],['bold','Bold']])}${ingredientSelect('Start with','base',['Coffee','Espresso / pods'],false)}${ingredientSelect('Syrup','syrup',['Syrups'])}${ingredientSelect('Creamer or milk','milk',['Creamers / milk'])}${ingredientSelect('Topping','topping',['Toppings'])}<button class="button" type="submit">Make a Pour Decision</button></form><p class="small-note">No added syrup skips syrup. Creamers and toppings may already contain sugar. Choose None for any ingredient you don’t want.</p><div class="actions">${link('Edit ingredients','inventory',true)}</div>`;
+}
+function recipeScreen() {
+  if(!state.recipe) return intro('Your next cup awaits','Make a Pour Decision','Choose your mood to create a recipe with your ingredients.')+link('Choose my mood','mood');
+  const r=state.recipe;
+  return intro('Your pour decision',escapeHtml(r.title),'A little something made from what you’ve got.')+`<h2>What goes in</h2><ul class="recipe-amounts">${r.amounts.map(i=>`<li><strong>${escapeHtml(i.amount)}</strong> — ${escapeHtml(i.name)}</li>`).join('')}</ul><h2>Make it yours</h2><ol class="recipe-steps">${r.steps.map(step=>`<li>${escapeHtml(step)}</li>`).join('')}</ol><p class="small-note">${escapeHtml(r.note)}</p><div class="actions">${link('Try another mood','mood')}${link('My ingredients','inventory',true)}</div>`;
+}
 function render() {
   const route = location.hash.slice(1) || 'home';
   if (!screens[route]) { location.replace('#home'); return; }
-  app.innerHTML = screens[route]();
+  app.innerHTML = screens[route]() + (state.storageError ? '<p role="status" class="small-note">Your browser couldn’t save ingredients. They stay available until this page closes.</p>' : '');
   app.querySelector('h1').focus({ preventScroll: true });
   document.querySelectorAll('nav a').forEach(anchor => {
     if (anchor.hash === `#${route}`) anchor.setAttribute('aria-current', 'page');
@@ -38,6 +65,13 @@ function render() {
   });
 }
 app.addEventListener('submit', event => {
+  if(event.target.id==='mood-form') {
+    event.preventDefault();
+    state.mood=Object.fromEntries(new FormData(event.target));
+    state.recipe=createRecipe(state.ingredients,state.mood);
+    location.hash=state.recipe?'#recipe':'#missing';
+    return;
+  }
   if (event.target.id === 'edit-form') {
     event.preventDefault();
     const data = new FormData(event.target);
@@ -45,6 +79,7 @@ app.addEventListener('submit', event => {
     if (!name) { document.querySelector('#edit-feedback').textContent = 'Enter an ingredient name.'; return; }
     const index = state.editing;
     state.ingredients[index] = { name, category: data.get('category') };
+    saveIngredients();
     state.editing = null;
     render();
     app.querySelector(`[data-edit="${index}"]`).focus();
@@ -56,6 +91,7 @@ app.addEventListener('submit', event => {
   const name = data.get('ingredient').trim();
   if (!name) { document.querySelector('#feedback').textContent = 'Enter an ingredient name.'; return; }
   state.ingredients.push({ name, category: data.get('category') });
+  saveIngredients();
   render();
   document.querySelector('#feedback').textContent = `${name} added.`;
   document.querySelector('#ingredient').focus();
@@ -78,6 +114,7 @@ app.addEventListener('click', event => {
   const button = event.target.closest('[data-remove]');
   if (!button) return;
   state.ingredients.splice(Number(button.dataset.remove), 1);
+  saveIngredients();
   state.editing = null;
   render();
 });
