@@ -20,7 +20,7 @@ function entry(missing) {
   <p id="feedback" role="status"></p>${items()}<div class="actions">${link('Look Right?', 'inventory')}${link('Back home', 'home', true)}</div>`;
 }
 const screens = {
-  home: () => intro('A little curiosity. A better cup.', 'Pour Decisions', 'It’s what’s inside that counts.') + `<img class="coffee-art" src="assets/coffee.svg" alt="Creamy coffee with heart-shaped milk foam in a ceramic cup" width="960" height="560"><h2>What’s the scoop?</h2><p>Start with what you have. See where it takes you.</p><div class="actions">${link('What’s the scoop?', 'scoop')}${link('I Got it', 'manual', true)}</div>`,
+  home: () => intro('A little curiosity. A better cup.', 'Pour Decisions', 'It’s what’s inside that counts.') + `<img class="coffee-art" src="assets/coffee-cup.webp" alt="Creamy coffee with heart-shaped milk foam in a ceramic cup" width="640" height="593"><h2>What’s the scoop?</h2><p>Start with what you have. See where it takes you.</p><div class="actions">${link('What’s the scoop?', 'scoop')}${link('I Got it', 'manual', true)}</div>`,
   scoop: () => intro('Take a look inside', 'What’s the scoop?', 'Gather your coffee, syrups, creamers, and toppings.') + `<div class="note"><strong>Photo scanning is coming next.</strong><p>For now, enter your ingredients yourself. No photo is uploaded or analyzed.</p></div><div class="actions">${link('I Got it', 'manual')}${link('Look Right?', 'inventory', true)}</div>`,
   manual: () => entry(false),
   missing: () => entry(true),

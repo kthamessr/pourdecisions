@@ -15,7 +15,9 @@ h1:focus { outline: none; }
 h2 { font-family: Georgia, serif; font-size: 28px; }
 p { line-height: 1.65; }
 .lede { color: #5b665e; font-size: 18px; }
-.coffee-art { display: block; width: 100%; height: auto; border-radius: 22px; margin-top: 28px; }
+.coffee-art { display: block; width: min(100%, 340px); height: auto; margin: 36px auto; animation: coffee-float 3.5s ease-in-out infinite; }
+@keyframes coffee-float { 0%, 100% { transform: translateY(0); } 50% { transform: translateY(-12px); } }
+@media (prefers-reduced-motion: reduce) { .coffee-art { animation: none; } }
 .actions { display: flex; gap: 12px; flex-wrap: wrap; margin-top: 28px; }
 .button { border: 1px solid #263e36; border-radius: 12px; background: #263e36; color: white; padding: 14px 20px; font: inherit; font-weight: 650; text-decoration: none; cursor: pointer; text-align: center; }
 .secondary { background: transparent; color: #263e36; }
