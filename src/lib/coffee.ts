@@ -25,15 +25,15 @@ export function makeRecipe(inv:Item[],taste:Taste,temp:Temp,random= Math.random,
  const by=(category:Category)=>inv.filter(i=>i.category===category);
  const coffee=by('coffee'),espresso=by('espresso');if(!coffee.length&&!espresso.length)return null;
  const actual=temp==='surprise'?(random()<.5?'hot':'iced'):temp;
- const people=Math.max(1,Math.min(24,Math.round(batch.people)||1));
- const waterOz=batch.pot?Math.max(6,Math.min(128,Math.round(batch.waterOz)||8)):people*8;
+ const people=Math.max(1,Math.min(6,Math.round(batch.people)||1));
+ const waterOz=batch.pot?Math.max(6,Math.min(72,Math.round(batch.waterOz)||people*11)):people*8;
  const scale=batch.pot?waterOz/8:people;
  const base=choose(!batch.pot&&taste.boldness>=40||!coffee.length? (espresso.length?espresso:coffee):coffee,1,random)[0];
  const ingredients:Recipe['ingredients']=[],steps:string[]=[];
  const syrups=taste.sweetness>5?choose(by('syrup'),1+Math.floor(taste.flavor/50),random):[];
  if(syrups.length){const pumps=half((.5+(taste.sweetness/100)*3.5)*scale);for(const s of syrups)ingredients.push({label:s.name,amount:`${pumps/syrups.length} pump${pumps/syrups.length===1?'':'s'}`});steps.push(`Add ${syrups.map(s=>s.name.toLowerCase()).join(' + ')} to your ${actual==='iced'?'glass':'mug'}.`);}
  if(base.category==='espresso'){const shots=Math.round((1+Math.round(taste.boldness/50))*scale);ingredients.unshift({label:base.name,amount:`${shots} shots (${shots} oz)`});steps.push(`Brew ${shots} espresso shots${actual==='iced'?' and set them aside':' and pour them in'}.`);}
- else{const scoops=Math.ceil(waterOz/6);const measure=`${scoops} ${scoops===1?'scoop':'scoops'}`;ingredients.unshift({label:base.name,amount:`${measure} + ${waterOz} oz water`});steps.push(/cold brew concentrate/i.test(base.name)?`Prepare ${waterOz} oz of cold brew using the concentrate’s label ratio.`:/instant/i.test(base.name)?`Prepare ${waterOz} oz of coffee following the package directions.`:`Brew ${measure} of ${base.name.toLowerCase()} with ${waterOz} oz water. Use level scoops (1 tablespoon each). A double scoop holds 2 scoops.`);}
+ else{const scoops=batch.pot?people*2:Math.ceil(waterOz/6);const measure=`${scoops} ${scoops===1?'scoop':'scoops'}`;ingredients.unshift({label:base.name,amount:`${measure} + ${waterOz} oz water`});steps.push(/cold brew concentrate/i.test(base.name)?`Prepare ${waterOz} oz of cold brew using the concentrate’s label ratio.`:/instant/i.test(base.name)?`Prepare ${waterOz} oz of coffee following the package directions.`:`Brew ${measure} of ${base.name.toLowerCase()} with ${waterOz} oz water. Use level scoops (1 tablespoon each). A double scoop holds 2 scoops.`);}
  const milk=taste.creaminess>5?choose(by('milk'),1,random)[0]:undefined;
  if(actual==='iced'){ingredients.push({label:'Ice',amount:`${people} full ${people===1?'glass':'glasses'}`});steps.push('Fill each glass with ice and divide the coffee between them.');}
  if(milk){const oz=half((1+(taste.creaminess/100)*7)*scale);ingredients.push({label:milk.name,amount:`${oz} oz`});steps.push(taste.foam>20&&(equipment.frother||(actual==='hot'&&equipment.steamer))?(actual==='hot'?`${equipment.steamer?'Steam':'Warm, then froth'} ${oz} oz of ${milk.name.toLowerCase()} until ${taste.foam>70?'big and fluffy':'lightly foamy'}, then pour it in.`:`Froth ${oz} oz of ${milk.name.toLowerCase()} into ${taste.foam>70?'a tall cold foam':'a light cold foam'} and float it on top.`):(actual==='hot'?`Warm ${oz} oz of ${milk.name.toLowerCase()} and pour it in.`:`Pour in ${oz} oz of cold ${milk.name.toLowerCase()}.`));}
