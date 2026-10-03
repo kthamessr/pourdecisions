@@ -29,7 +29,7 @@ export function makeRecipe(inv:Item[],taste:Taste,temp:Temp,random= Math.random)
  const ingredients:Recipe['ingredients']=[],steps:string[]=[];
  const syrups=taste.sweetness>5?choose(by('syrup'),1+Math.floor(taste.flavor/50),random):[];
  if(syrups.length){const pumps=half(.5+(taste.sweetness/100)*3.5);for(const s of syrups)ingredients.push({label:s.name,amount:`${pumps/syrups.length} pump${pumps/syrups.length===1?'':'s'}`});steps.push(`Add ${syrups.map(s=>s.name.toLowerCase()).join(' + ')} to your ${actual==='iced'?'glass':'mug'}.`);}
- if(base.category==='espresso'){const shots=1+Math.round(taste.boldness/50);ingredients.unshift({label:base.name,amount:`${shots} shots (${shots} oz)`});steps.push(`Brew ${shots} espresso shots and pour them in.`);}
+ if(base.category==='espresso'){const shots=1+Math.round(taste.boldness/50);ingredients.unshift({label:base.name,amount:`${shots} shots (${shots} oz)`});steps.push(`Brew ${shots} espresso shots${actual==='iced'?' and set them aside':' and pour them in'}.`);}
  else{const grams=Math.round(12+taste.boldness*.1);ingredients.unshift({label:base.name,amount:`${grams} g + 8 oz water`});steps.push(/cold brew concentrate/i.test(base.name)?'Prepare 8 oz of cold brew using the concentrate’s label ratio. The grounds measure is for brewed coffee.':/instant/i.test(base.name)?'Prepare 8 oz of coffee following the package directions.':`Brew ${grams} g of ${base.name.toLowerCase()} with 8 oz water.`);}
  const milk=taste.creaminess>5?choose(by('milk'),1,random)[0]:undefined;
  if(actual==='iced'){ingredients.push({label:'Ice',amount:'1 full glass'});steps.push('Fill the glass with ice and pour the coffee over.');}
