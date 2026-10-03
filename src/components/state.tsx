@@ -10,7 +10,16 @@ function useStore(){
  function updateDraft(change:Partial<Draft>){setCurrent(old=>{const next={...old,...change};write('pd-draft',next);return next;});}
  function saveDecision(decision:Decision){const next=[decision,...saved];if(!write('pd-decisions',next))return false;setSaved(next);return true;}
  function deleteDecision(id:string){const next=saved.filter(d=>d.id!==id);if(!write('pd-decisions',next)){toast('Couldn’t delete right now. Try again.');return;}setSaved(next);toast('Decision deleted.');}
- return{inv,updateInv,saved,saveDecision,deleteDecision,current,updateDraft,toast,message};
+ function removePhoto(id?:string){
+  if(id){
+   const next=saved.map(d=>d.id===id?{...d,photo:undefined}:d);
+   if(!write('pd-decisions',next)){toast('Couldn’t remove the photo. Try again.');return;}
+   setSaved(next);
+  }
+  if(!id||current.savedId===id)updateDraft({photo:undefined});
+  toast('Photo removed.');
+ }
+ return{removePhoto,inv,updateInv,saved,saveDecision,deleteDecision,current,updateDraft,toast,message};
 }
 type Store=ReturnType<typeof useStore>;
 const Context=createContext<Store|null>(null);
