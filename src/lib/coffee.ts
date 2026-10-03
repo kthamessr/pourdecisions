@@ -21,22 +21,26 @@ export function addItems(inventory:Item[],entries:[string,Category][]):Item[]{
 const names={sweet:['Dessert With Responsibilities','Treat Yo Cup',"Sugar, We're Goin' Down",'Cake Was Busy'],bold:['I Said What I Said','Monday Has Been Cancelled','No Notes','Unbothered & Caffeinated'],creamy:['Smooth Operator','Velvet Hug','Soft Launch','Cloud Nine-ish'],chill:["Tomorrow's Problem",'Low Effort, High Reward','Just Vibing','Inbox Zero (Emotionally)']};
 const half=(n:number)=>Math.round(n*2)/2;
 function choose<T>(items:T[],count:number,random:()=>number):T[]{const pool=[...items],out:T[]=[];while(pool.length&&out.length<count)out.push(pool.splice(Math.floor(random()*pool.length),1)[0]);return out;}
-export function makeRecipe(inv:Item[],taste:Taste,temp:Temp,random= Math.random,equipment={steamer:true,frother:true}):Recipe|null{
+export function makeRecipe(inv:Item[],taste:Taste,temp:Temp,random= Math.random,equipment={steamer:true,frother:true},batch={people:1,pot:false,waterOz:8}):Recipe|null{
  const by=(category:Category)=>inv.filter(i=>i.category===category);
  const coffee=by('coffee'),espresso=by('espresso');if(!coffee.length&&!espresso.length)return null;
  const actual=temp==='surprise'?(random()<.5?'hot':'iced'):temp;
- const base=choose(taste.boldness>=40||!coffee.length? (espresso.length?espresso:coffee):coffee,1,random)[0];
+ const people=Math.max(1,Math.min(24,Math.round(batch.people)||1));
+ const waterOz=batch.pot?Math.max(6,Math.min(128,Math.round(batch.waterOz)||8)):people*8;
+ const scale=batch.pot?waterOz/8:people;
+ const base=choose(!batch.pot&&taste.boldness>=40||!coffee.length? (espresso.length?espresso:coffee):coffee,1,random)[0];
  const ingredients:Recipe['ingredients']=[],steps:string[]=[];
  const syrups=taste.sweetness>5?choose(by('syrup'),1+Math.floor(taste.flavor/50),random):[];
- if(syrups.length){const pumps=half(.5+(taste.sweetness/100)*3.5);for(const s of syrups)ingredients.push({label:s.name,amount:`${pumps/syrups.length} pump${pumps/syrups.length===1?'':'s'}`});steps.push(`Add ${syrups.map(s=>s.name.toLowerCase()).join(' + ')} to your ${actual==='iced'?'glass':'mug'}.`);}
- if(base.category==='espresso'){const shots=1+Math.round(taste.boldness/50);ingredients.unshift({label:base.name,amount:`${shots} shots (${shots} oz)`});steps.push(`Brew ${shots} espresso shots${actual==='iced'?' and set them aside':' and pour them in'}.`);}
- else{const scoops=Math.round((12+taste.boldness*.1)/5*2)/2;const measure=`${scoops} ${scoops===1?'scoop':'scoops'}`;ingredients.unshift({label:base.name,amount:`${measure} + 8 oz water`});steps.push(/cold brew concentrate/i.test(base.name)?'Prepare 8 oz of cold brew using the concentrate’s label ratio. The grounds measure is for brewed coffee.':/instant/i.test(base.name)?'Prepare 8 oz of coffee following the package directions.':`Brew ${measure} of ${base.name.toLowerCase()} with 8 oz water. Use level scoops (1 tablespoon each). A double scoop holds 2 scoops.`);}
+ if(syrups.length){const pumps=half((.5+(taste.sweetness/100)*3.5)*scale);for(const s of syrups)ingredients.push({label:s.name,amount:`${pumps/syrups.length} pump${pumps/syrups.length===1?'':'s'}`});steps.push(`Add ${syrups.map(s=>s.name.toLowerCase()).join(' + ')} to your ${actual==='iced'?'glass':'mug'}.`);}
+ if(base.category==='espresso'){const shots=Math.round((1+Math.round(taste.boldness/50))*scale);ingredients.unshift({label:base.name,amount:`${shots} shots (${shots} oz)`});steps.push(`Brew ${shots} espresso shots${actual==='iced'?' and set them aside':' and pour them in'}.`);}
+ else{const scoops=Math.ceil(waterOz/6);const measure=`${scoops} ${scoops===1?'scoop':'scoops'}`;ingredients.unshift({label:base.name,amount:`${measure} + ${waterOz} oz water`});steps.push(/cold brew concentrate/i.test(base.name)?`Prepare ${waterOz} oz of cold brew using the concentrate’s label ratio.`:/instant/i.test(base.name)?`Prepare ${waterOz} oz of coffee following the package directions.`:`Brew ${measure} of ${base.name.toLowerCase()} with ${waterOz} oz water. Use level scoops (1 tablespoon each). A double scoop holds 2 scoops.`);}
  const milk=taste.creaminess>5?choose(by('milk'),1,random)[0]:undefined;
- if(actual==='iced'){ingredients.push({label:'Ice',amount:'1 full glass'});steps.push('Fill the glass with ice and pour the coffee over.');}
- if(milk){const oz=half(1+(taste.creaminess/100)*7);ingredients.push({label:milk.name,amount:`${oz} oz`});steps.push(taste.foam>20&&(equipment.frother||(actual==='hot'&&equipment.steamer))?(actual==='hot'?`${equipment.steamer?'Steam':'Warm, then froth'} ${oz} oz of ${milk.name.toLowerCase()} until ${taste.foam>70?'big and fluffy':'lightly foamy'}, then pour it in.`:`Froth ${oz} oz of ${milk.name.toLowerCase()} into ${taste.foam>70?'a tall cold foam':'a light cold foam'} and float it on top.`):(actual==='hot'?`Warm ${oz} oz of ${milk.name.toLowerCase()} and pour it in.`:`Pour in ${oz} oz of cold ${milk.name.toLowerCase()}.`));}
+ if(actual==='iced'){ingredients.push({label:'Ice',amount:`${people} full ${people===1?'glass':'glasses'}`});steps.push('Fill each glass with ice and divide the coffee between them.');}
+ if(milk){const oz=half((1+(taste.creaminess/100)*7)*scale);ingredients.push({label:milk.name,amount:`${oz} oz`});steps.push(taste.foam>20&&(equipment.frother||(actual==='hot'&&equipment.steamer))?(actual==='hot'?`${equipment.steamer?'Steam':'Warm, then froth'} ${oz} oz of ${milk.name.toLowerCase()} until ${taste.foam>70?'big and fluffy':'lightly foamy'}, then pour it in.`:`Froth ${oz} oz of ${milk.name.toLowerCase()} into ${taste.foam>70?'a tall cold foam':'a light cold foam'} and float it on top.`):(actual==='hot'?`Warm ${oz} oz of ${milk.name.toLowerCase()} and pour it in.`:`Pour in ${oz} oz of cold ${milk.name.toLowerCase()}.`));}
  if(actual==='hot')steps.push('Give it a gentle swirl.');
  const toppings=taste.flavor>30?choose(by('topping'),taste.flavor>75?2:1,random):[];
- for(const topping of toppings)ingredients.push({label:topping.name,amount:taste.flavor>75?'a generous pinch / swirl':'a light pinch / dollop'});
+ for(const topping of toppings)ingredients.push({label:topping.name,amount:(taste.flavor>75?'a generous pinch / swirl':'a light pinch / dollop')+(people>1?' per cup':'')});
+ if(people>1||batch.pot){ingredients.push({label:'Makes',amount:batch.pot?`${waterOz} oz coffee for ${people} people`:`${people} drinks`});steps.push(`Divide between ${people} ${people===1?'cup':'cups'}. Add syrup, milk, and toppings to the cups, not the coffee maker.`);}
  if(toppings.length)steps.push(`Finish with ${toppings.map(t=>t.name.toLowerCase()).join(' and ')}.`);
  const mood=taste.sweetness>=65?'sweet':taste.boldness>=65?'bold':taste.creaminess>=65?'creamy':'chill';
  return{name:choose(names[mood],1,random)[0],temp:actual,ingredients,steps};
