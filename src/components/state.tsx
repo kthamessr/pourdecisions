@@ -1,6 +1,6 @@
 import {createContext,useContext,useEffect,useRef,useState,type ReactNode} from 'react';
 import {inventory,decisions,draft,write,type Draft} from '../lib/storage';
-import {type Item,type Decision} from '../lib/coffee';
+import {type Item,type Decision,type Taste} from '../lib/coffee';
 function useStore(){
  const [inv,setInv]=useState(inventory),[saved,setSaved]=useState(decisions),[current,setCurrent]=useState(draft),[message,setMessage]=useState('');
  const timer=useRef<ReturnType<typeof setTimeout>|undefined>(undefined);
@@ -10,6 +10,14 @@ function useStore(){
  function updateDraft(change:Partial<Draft>){setCurrent(old=>{const next={...old,...change};write('pd-draft',next);return next;});}
  function saveDecision(decision:Decision){const next=[decision,...saved];if(!write('pd-decisions',next))return false;setSaved(next);return true;}
  function deleteDecision(id:string){const next=saved.filter(d=>d.id!==id);if(!write('pd-decisions',next)){toast('Couldn’t delete right now. Try again.');return;}setSaved(next);toast('Decision deleted.');}
+ function updateEvaluation(evaluation:Taste){
+  if(current.savedId){
+   const next=saved.map(d=>d.id===current.savedId?{...d,evaluation}:d);
+   if(!write('pd-decisions',next)){toast('Couldn’t save your rating. Try again.');return;}
+   setSaved(next);
+  }
+  updateDraft({evaluation});
+ }
  function removePhoto(id?:string){
   if(id){
    const next=saved.map(d=>d.id===id?{...d,photo:undefined}:d);
@@ -19,7 +27,7 @@ function useStore(){
   if(!id||current.savedId===id)updateDraft({photo:undefined});
   toast('Photo removed.');
  }
- return{removePhoto,inv,updateInv,saved,saveDecision,deleteDecision,current,updateDraft,toast,message};
+ return{updateEvaluation,removePhoto,inv,updateInv,saved,saveDecision,deleteDecision,current,updateDraft,toast,message};
 }
 type Store=ReturnType<typeof useStore>;
 const Context=createContext<Store|null>(null);
