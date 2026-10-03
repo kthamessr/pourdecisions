@@ -45,7 +45,7 @@ export function makeRecipe(inv:Item[],taste:Taste,temp:Temp,random= Math.random,
  const mood=taste.sweetness>=65?'sweet':taste.boldness>=65?'bold':taste.creaminess>=65?'creamy':'chill';
  return{name:choose(names[mood],1,random)[0],temp:actual,ingredients,steps};
 }
-export const recipeText=(recipe:Recipe)=>`${recipe.name}\n${recipe.temp==='iced'?'🧊 Iced':'🔥 Hot'}\n☕ ${recipe.ingredients.map(i=>`${i.amount} ${i.label}`).join('\n☕ ')}\n\n${recipe.steps.map((s,i)=>`${i+1}. ${s}`).join('\n')}\n\nMade with Pour Decisions`;
+export const recipeText=(recipe:Recipe)=>`${recipe.name}\n${recipe.temp==='iced'?'🧊 Iced':'🔥 Hot'}\n☕ ${recipe.ingredients.map(i=>`${i.amount} ${i.label}`).join('\n☕ ')}\n\n${recipe.steps.map((s,i)=>`${i+1}. ${s}`).join('\n')}\n\nMade with Pour Decisions\nhttps://kthamessr.github.io/pourdecisions/`;
 export async function shareRecipe(recipe:Recipe,toast:(s:string)=>void){
  const text=recipeText(recipe);
  if(navigator.share){try{await navigator.share({title:recipe.name,text});return;}catch(e){if(e instanceof DOMException&&e.name==='AbortError')return;}}
