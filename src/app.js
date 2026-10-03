@@ -40,13 +40,29 @@ const screens = {
   mood: () => moodScreen(),
   recipe: () => recipeScreen()
 };
+const moodSliderOptions = {
+  temperature: [['hot','Hot'],['iced','Iced']],
+  sweetness: [['none','No added syrup'],['light','Lightly sweet'],['sweet','Sweet']],
+  strength: [['regular','Regular'],['bold','Bold']]
+};
+app.addEventListener('input', event => {
+  const name=event.target.dataset.moodSlider;
+  if (!name || !moodSliderOptions[name]) return;
+  const [value,label]=moodSliderOptions[name][Number(event.target.value)];
+  state.mood[name]=value;
+  event.target.setAttribute('aria-valuetext',label);
+  document.querySelector('#'+name+'-value').textContent=label;
+});
 function ingredientSelect(label, name, allowed, optional=true) {
   return `<label for="${name}">${label}</label><select id="${name}" name="${name}">${optional?'<option value="">None</option>':''}${state.ingredients.filter(i=>allowed.includes(i.category)).map(i=>`<option value="${escapeHtml(i.name)}"${state.mood[name]===i.name?' selected':''}>${escapeHtml(i.name)} (${escapeHtml(i.category)})</option>`).join('')}</select>`;
 }
 function moodScreen() {
   const heading=intro('Your cup, your way','What’s Your Mood?','Choose how you want your next cup to feel.');
   if(!state.ingredients.some(i=>['Coffee','Espresso / pods'].includes(i.category))) return heading+'<p class="empty">Add coffee or espresso to make your first pour decision.</p>'+link('Something’s missing','missing');
-  const choice=(label,name,options)=>`<fieldset><legend>${label}</legend><div class="mood-options">${options.map(([value,text])=>`<label class="mood-choice"><input type="radio" name="${name}" value="${value}"${state.mood[name]===value?' checked':''}>${text}</label>`).join('')}</div></fieldset>`;
+  const choice=(label,name,options)=>{
+    const selected=Math.max(0,options.findIndex(([value])=>state.mood[name]===value));
+    return `<div class="mood-slider"><div class="slider-heading"><label for="${name}">${label}</label><output for="${name}" id="${name}-value">${options[selected][1]}</output></div><input type="range" id="${name}" name="${name}" min="0" max="${options.length-1}" step="1" value="${selected}" data-mood-slider="${name}" aria-valuetext="${options[selected][1]}"><div class="slider-labels" aria-hidden="true">${options.map(([,text])=>`<span>${text}</span>`).join('')}</div></div>`;
+  };
   return heading+`<form id="mood-form">${choice('Temperature','temperature',[['hot','Hot'],['iced','Iced']])}${choice('Sweetness','sweetness',[['none','No added syrup'],['light','Lightly sweet'],['sweet','Sweet']])}${choice('Coffee strength','strength',[['regular','Regular'],['bold','Bold']])}${ingredientSelect('Start with','base',['Coffee','Espresso / pods'],false)}${ingredientSelect('Syrup','syrup',['Syrups'])}${ingredientSelect('Creamer or milk','milk',['Creamers / milk'])}${ingredientSelect('Topping','topping',['Toppings'])}<button class="button" type="submit">Make a Pour Decision</button></form><p class="small-note">No added syrup skips syrup. Creamers and toppings may already contain sugar. Choose None for any ingredient you don’t want.</p><div class="actions">${link('Edit ingredients','inventory',true)}</div>`;
 }
 function recipeScreen() {
@@ -68,6 +84,7 @@ app.addEventListener('submit', event => {
   if(event.target.id==='mood-form') {
     event.preventDefault();
     state.mood=Object.fromEntries(new FormData(event.target));
+    for (const [name, options] of Object.entries(moodSliderOptions)) state.mood[name]=options[Number(state.mood[name])][0];
     state.recipe=createRecipe(state.ingredients,state.mood);
     location.hash=state.recipe?'#recipe':'#missing';
     return;
