@@ -30,22 +30,46 @@ export function makeRecipe(inv:Item[],taste:Taste,temp:Temp,random= Math.random,
  const people=batch.pot?requestedPeople:1;
  const plan=potPlan(requestedPeople);
  const waterOz=batch.pot?Math.max(6,Math.min(72,Math.round(batch.waterOz)||plan.waterOz)):8;
- const scale=batch.pot?waterOz/8:1;
- const base=choose(!batch.pot&&taste.boldness>=40||!coffee.length? (espresso.length?espresso:coffee):coffee,1,random)[0];
+ const base=choose((!batch.pot&&taste.boldness>=40)||!coffee.length?(espresso.length?espresso:coffee):coffee,1,random)[0];
  const ingredients:Recipe['ingredients']=[],steps:string[]=[];
+ const perCup=batch.pot?' per cup':'';
+ const measure=(n:number,unit:'tsp'|'tbsp'|'oz')=>`${Number(n.toFixed(2))} ${unit}`;
+ const spoon=(tsp:number)=>tsp>=3&&tsp%3===0?measure(tsp/3,'tbsp'):measure(tsp,'tsp');
+ const dairy=by('milk');
+ const isHeavy=(i:Item)=>/heavy|whipping cream|double cream/i.test(i.name);
+ const isCreamer=(i:Item)=>/creamer|sweet cream|sweet.*creamy|macchiato/i.test(i.name)&&!isHeavy(i);
+ const heavy=dairy.find(isHeavy),creamer=dairy.find(isCreamer);
+ const regular=dairy.filter(i=>!isHeavy(i)&&!isCreamer(i));
+ const canFoam=taste.foam>20&&(equipment.frother||(actual==='hot'&&equipment.steamer));
+ const daughterFoam=canFoam&&equipment.frother&&!!heavy&&!!creamer;
+ const milk=taste.creaminess>5?choose(regular.length?regular:dairy,1,random)[0]:undefined;
  const syrups=taste.sweetness>5?choose(by('syrup'),1+Math.floor(taste.flavor/50),random):[];
- if(syrups.length){const pumps=half((.5+(taste.sweetness/100)*3.5)*scale);for(const s of syrups)ingredients.push({label:s.name,amount:`${pumps/syrups.length} pump${pumps/syrups.length===1?'':'s'}`});steps.push(`Add ${syrups.map(s=>s.name.toLowerCase()).join(' + ')} to your ${actual==='iced'?'glass':'mug'}.`);}
- if(base.category==='espresso'){const shots=Math.round((1+Math.round(taste.boldness/50))*scale);ingredients.unshift({label:base.name,amount:`${shots} shots (${shots} oz)`});steps.push(`Brew ${shots} espresso shots${actual==='iced'?' and set them aside':' and pour them in'}.`);}
- else{const scoops=batch.pot?plan.scoops:Math.ceil(waterOz/6);const measure=`${scoops} ${scoops===1?'scoop':'scoops'}`;ingredients.unshift({label:base.name,amount:`${measure} + ${waterOz} oz water`});steps.push(/cold brew concentrate/i.test(base.name)?`Prepare ${waterOz} oz of cold brew using the concentrate’s label ratio.`:/instant/i.test(base.name)?`Prepare ${waterOz} oz of coffee following the package directions.`:`Brew ${measure} of ${base.name.toLowerCase()} with ${waterOz} oz water. Use level scoops (1 tablespoon each). A double scoop holds 2 scoops.`);}
- const milk=taste.creaminess>5?choose(by('milk'),1,random)[0]:undefined;
- if(actual==='iced'){ingredients.push({label:'Ice',amount:`${people} full ${people===1?'glass':'glasses'}`});steps.push('Fill each glass with ice and divide the coffee between them.');}
- if(milk){const oz=half((1+(taste.creaminess/100)*7)*scale);ingredients.push({label:milk.name,amount:`${oz} oz`});steps.push(taste.foam>20&&(equipment.frother||(actual==='hot'&&equipment.steamer))?(actual==='hot'?`${equipment.steamer?'Steam':'Warm, then froth'} ${oz} oz of ${milk.name.toLowerCase()} until ${taste.foam>70?'big and fluffy':'lightly foamy'}, then pour it in.`:`Froth ${oz} oz of ${milk.name.toLowerCase()} into ${taste.foam>70?'a tall cold foam':'a light cold foam'} and float it on top.`):(actual==='hot'?`Warm ${oz} oz of ${milk.name.toLowerCase()} and pour it in.`:`Pour in ${oz} oz of cold ${milk.name.toLowerCase()}.`));}
- if(actual==='hot')steps.push('Give it a gentle swirl.');
+ // One syrup budget per cup, allocated to either the drink or its foam.
+ const syrupTsp=syrups.length?half(.5+2.5*taste.sweetness/100):0;
+ const syrupInFoam=canFoam&&equipment.frother&&syrups.length>0;
+ if(base.category==='espresso'){const shots=1+Math.round(taste.boldness/50);ingredients.push({label:base.name,amount:`${shots} shots (${shots} oz)`});steps.push(`Brew ${shots} espresso shots and set them aside.`);}
+ else{const scoops=batch.pot?plan.scoops:Math.ceil(waterOz/6);const amount=`${scoops} ${scoops===1?'scoop':'scoops'}`;const special=/cold brew concentrate|instant/i.test(base.name);ingredients.push({label:base.name,amount:special?`${waterOz} oz prepared coffee (follow label ratio)`:`${amount} + ${waterOz} oz water`});steps.push(special?`Prepare ${waterOz} oz of ${base.name.toLowerCase()} following the package directions.`:`Brew ${amount} of ${base.name.toLowerCase()} with ${waterOz} oz water. Use level scoops (1 tablespoon each). A double scoop holds 2 scoops.`);}
+ steps.push(actual==='iced'?'Grab a 16–20 oz glass for each drink. Leave room for ice, milk, and foam.':'Grab a 12–16 oz cup for each drink. Leave room for milk and foam.');
+ for(const syrup of syrups)ingredients.push({label:`${syrup.name}${syrupInFoam?' (for foam)':''}`,amount:spoon(syrupTsp/syrups.length)+perCup});
+ if(syrups.length&&!syrupInFoam)steps.push(`Add the measured ${syrups.map(s=>s.name.toLowerCase()).join(' + ')} to ${batch.pot?'each cup':'your cup'}.`);
+ if(actual==='iced'){ingredients.push({label:'Ice',amount:'Fill cup halfway'+perCup});steps.push('Fill each glass halfway with ice. Pour in coffee, leaving room for the extras.');}
+ else steps.push(batch.pot?`Divide the coffee between ${people} cups, leaving room for extras. Keep milk and syrup out of the coffee maker.`:'Pour in your coffee, leaving room for extras.');
+ if(milk){const dense=isHeavy(milk)||isCreamer(milk);const amount=dense?half((isHeavy(milk)?.5:1)+taste.creaminess/100*(isHeavy(milk)?.5:2)):half(.5+taste.creaminess/100*1.5);const unit=dense?'tbsp':'oz';ingredients.push({label:`${milk.name} (in coffee)`,amount:measure(amount,unit)+perCup});steps.push(`${actual==='hot'?'Warm':'Measure'} ${measure(amount,unit)} of ${milk.name.toLowerCase()} for each cup, then stir it into the coffee.`);}
+ if(canFoam){
+  const foamBase=daughterFoam?heavy:regular[0]??heavy??creamer;
+  if(foamBase){
+   if(daughterFoam){ingredients.push({label:`${heavy!.name} (for foam)`,amount:'3 tbsp'+perCup},{label:`${creamer!.name} (for foam)`,amount:'2 tbsp'+perCup});steps.push(`For each cup, combine 3 tbsp ${heavy!.name.toLowerCase()} + 2 tbsp ${creamer!.name.toLowerCase()}${syrupInFoam?' + the measured syrup':''}. Froth together in a separate container. This makes a small foam batch; you do not need to use it all.`);}
+   else{ingredients.push({label:`${foamBase.name} (for foam)`,amount:'2 tbsp'+perCup});steps.push(`${actual==='hot'&&!isHeavy(foamBase)?(equipment.steamer?'Steam':'Warm, then froth'):'Froth'} 2 tbsp ${foamBase.name.toLowerCase()}${syrupInFoam?' with the measured syrup':''} separately for each cup. Follow your equipment’s minimum fill level if making a larger batch.`);}
+   steps.push(`Spoon ${taste.foam>70?'as much foam as you like':'a little foam'} onto each drink. Stop before the cup is full; any remaining foam is optional.`);
+  }else if(syrupInFoam){steps.push('No milk or cream for foam? Stir the measured syrup into the coffee instead.');}
+ }
+ 
  const toppings=taste.flavor>30?choose(by('topping'),taste.flavor>75?2:1,random):[];
- for(const topping of toppings)ingredients.push({label:topping.name,amount:(taste.flavor>75?'a generous pinch / swirl':'a light pinch / dollop')+(people>1?' per cup':'')});
- if(people>1||batch.pot){ingredients.push({label:'Makes',amount:batch.pot?`${waterOz} oz coffee for ${people} people`:`${people} drinks`});steps.push(`Divide between ${people} ${people===1?'cup':'cups'}. Add syrup, milk, and toppings to the cups, not the coffee maker.`);}
- if(toppings.length)steps.push(`Finish with ${toppings.map(t=>t.name.toLowerCase()).join(' and ')}.`);
- if(!batch.pot&&requestedPeople>1)steps.push(`This recipe makes one cup. Repeat separately for each of your ${requestedPeople} people.`);
+ for(const topping of toppings)ingredients.push({label:topping.name,amount:(taste.flavor>75?'a generous pinch / swirl':'a light pinch / dollop')+perCup});
+ if(toppings.length)steps.push(`Finish each cup with ${toppings.map(t=>t.name.toLowerCase()).join(' and ')}.`);
+ if(batch.pot){ingredients.push({label:'Makes',amount:`${waterOz} oz coffee for ${people} people`});steps.push('Milk, syrup, foam, and topping amounts above are per cup. Dress each cup separately.');}
+ else if(requestedPeople>1)steps.push(`This recipe makes one cup. Repeat separately for each of your ${requestedPeople} people.`);
+ if(creamer&&syrups.length)steps.push('Creamer may already be sweet. Start with less syrup if yours is sweetened, then taste.');
  const mood=taste.sweetness>=65?'sweet':taste.boldness>=65?'bold':taste.creaminess>=65?'creamy':'chill';
  return{name:choose(names[mood],1,random)[0],temp:actual,ingredients,steps};
 }
