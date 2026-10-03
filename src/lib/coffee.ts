@@ -22,7 +22,7 @@ const names={sweet:['Dessert With Responsibilities','Treat Yo Cup',"Sugar, We're
 const half=(n:number)=>Math.round(n*2)/2;
 function choose<T>(items:T[],count:number,random:()=>number):T[]{const pool=[...items],out:T[]=[];while(pool.length&&out.length<count)out.push(pool.splice(Math.floor(random()*pool.length),1)[0]);return out;}
 export function potPlan(people:number){const n=Math.max(1,Math.min(6,Math.round(people)||1));const units=n>=5?6:n===4?4.5:n;return {scoops:units*2,waterOz:Math.round(units*11),low:units*10,high:units*12,label:n>=5?'Full pot':n===4?'¾ pot':n===3?'Half a pot':'Your pot'};}
-export function makeRecipe(inv:Item[],taste:Taste,temp:Temp,random= Math.random,equipment={steamer:true,frother:true},batch={people:1,pot:false,waterOz:8}):Recipe|null{
+export function makeRecipe(inv:Item[],taste:Taste,temp:Temp,random= Math.random,equipment={steamer:true,frother:true},batch={people:1,pot:false,waterOz:8},baseChoice?:'coffee'|'espresso'):Recipe|null{
  const by=(category:Category)=>inv.filter(i=>i.category===category);
  const coffee=by('coffee'),espresso=by('espresso');if(!coffee.length&&!espresso.length)return null;
  const actual=temp==='surprise'?(random()<.5?'hot':'iced'):temp;
@@ -30,7 +30,8 @@ export function makeRecipe(inv:Item[],taste:Taste,temp:Temp,random= Math.random,
  const people=batch.pot?requestedPeople:1;
  const plan=potPlan(requestedPeople);
  const waterOz=batch.pot?Math.max(6,Math.min(72,Math.round(batch.waterOz)||plan.waterOz)):8;
- const base=choose((!batch.pot&&taste.boldness>=40)||!coffee.length?(espresso.length?espresso:coffee):coffee,1,random)[0];
+ if(baseChoice&&!by(baseChoice).length)return null;
+ const base=choose(baseChoice?by(baseChoice):(!batch.pot&&taste.boldness>=40)||!coffee.length?(espresso.length?espresso:coffee):coffee,1,random)[0];
  const ingredients:Recipe['ingredients']=[],steps:string[]=[];
  const perCup=batch.pot?' per cup':'';
  const measure=(n:number,unit:'tsp'|'tbsp'|'oz')=>`${Number(n.toFixed(2))} ${unit}`;
