@@ -5,7 +5,7 @@ export const CATEGORIES: {id:Category;label:string;emoji:string;ideas:string[]}[
 {id:'syrup',label:'Syrups',emoji:'🍯',ideas:['Vanilla syrup','Caramel syrup','Hazelnut syrup','Maple syrup']},
 {id:'milk',label:'Creamers / Milk',emoji:'🥛',ideas:['Whole milk','Oat milk','Almond milk','Sweet cream']},
 {id:'topping',label:'Toppings',emoji:'✨',ideas:['Whipped cream','Cinnamon','Cocoa powder','Caramel drizzle']}];
-export type Item={id:string;name:string;category:Category};
+export type Item={id:string;name:string;category:Category;outOfStock?:boolean};
 export type Taste={boldness:number;sweetness:number;creaminess:number;flavor:number;foam:number};
 export type Temp='hot'|'iced'|'surprise';
 export type Recipe={name:string;temp:'hot'|'iced';ingredients:{label:string;amount:string}[];steps:string[]};
@@ -23,7 +23,7 @@ const half=(n:number)=>Math.round(n*2)/2;
 function choose<T>(items:T[],count:number,random:()=>number):T[]{const pool=[...items],out:T[]=[];while(pool.length&&out.length<count)out.push(pool.splice(Math.floor(random()*pool.length),1)[0]);return out;}
 export function potPlan(people:number){const n=Math.max(1,Math.min(6,Math.round(people)||1));const units=n>=5?6:n===4?4.5:n;return {scoops:units*2,waterOz:Math.round(units*11),low:units*10,high:units*12,label:n>=5?'Full pot':n===4?'¾ pot':n===3?'Half a pot':'Your pot'};}
 export function makeRecipe(inv:Item[],taste:Taste,temp:Temp,random= Math.random,equipment={steamer:true,frother:true},batch={people:1,pot:false,waterOz:8},baseChoice?:'coffee'|'espresso'):Recipe|null{
- const by=(category:Category)=>inv.filter(i=>i.category===category);
+ const by=(category:Category)=>inv.filter(i=>i.category===category&&i.outOfStock!==true);
  const coffee=by('coffee'),espresso=by('espresso');if(!coffee.length&&!espresso.length)return null;
  const actual=temp==='surprise'?(random()<.5?'hot':'iced'):temp;
  const requestedPeople=Math.max(1,Math.min(6,Math.round(batch.people)||1));
